@@ -1,0 +1,36 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content" >
+
+    <Button
+        android:background="@drawable/button"
+        android:id="@+id/speak"            
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/voice_button" 
+        android:onClick="speak"
+        style="@style/Button"
+        
+        />
+
+    <Button
+         android:background="@drawable/button"
+        android:id="@+id/add_list"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Add List" 
+        android:onClick="add_list"
+        style="@style/Button"
+        />
+    
+    <Button
+        android:background="@drawable/button"
+        android:id="@+id/toggleListening"            
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Start Listening" 
+        android:onClick="toggleRecognizer"
+        style="@style/Button"
+        
+        />    
+</LinearLayout>
