@@ -5,7 +5,7 @@ import com.taskmanager.adapters.TaskListAdapter;
 import com.taskmanager.database.*;
 import com.taskmanager.messages.TaskContact;
 import com.taskmanager.messages.TaskMessenger;
-import com.taskmanager.speech.TaskSpeech;
+import com.taskmanager.speech.*;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -53,8 +53,7 @@ public class DisplayTaskLists extends Activity{
 	private TaskSpeech taskSpeech;
 	
 	private TaskList openList;
-	private PopupWindow popupWindow;
-	
+	private PopupWindow popupWindow;	
 	private PopupWindow menu;
 	
 	//TaskListItems array containing all the strings.
@@ -66,8 +65,7 @@ public class DisplayTaskLists extends Activity{
 	
 	private SpeechRecognizer taskSpeechRecognizer;
 	private Intent taskRecognizerIntent;
-	
-	
+		
 	public void onPause() {
 		super.onPause();
 		Log.d(TAG, "Paused");
@@ -75,8 +73,7 @@ public class DisplayTaskLists extends Activity{
 	
 	public void onDestroy() {
 		Log.d(TAG, "Destroyed");
-		cancelSpeechRecognition();
-		taskSpeechRecognizer.destroy();
+		VoiceHandler.getInstance().stopListening();
 		super.onDestroy();
 	}
 	
@@ -85,17 +82,12 @@ public class DisplayTaskLists extends Activity{
 		super.onCreate(savedInstanceState);
 		
 		dbList.init(getApplicationContext());
-		
 		taskSpeech = new TaskSpeech(getApplicationContext());
 		
 		loadListView();
 						
-		Log.d(TAG, "speech recognition available: " + SpeechRecognizer.isRecognitionAvailable(getBaseContext()));		
-		taskSpeechRecognizer = SpeechRecognizer.createSpeechRecognizer(getBaseContext());
-		taskSpeechRecognizer.setRecognitionListener(taskRecognitionListener);
-		taskRecognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-		taskRecognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-		taskRecognizerIntent.putExtra("calling_package", "com.taskmanager.activities");
+		Log.d(TAG, "speech recognition available: " + SpeechRecognizer.isRecognitionAvailable(getBaseContext()));
+		VoiceHandler.getInstance().init(getApplicationContext());
 	}
 
 	
@@ -118,7 +110,6 @@ public class DisplayTaskLists extends Activity{
 		   } 
 		});
 		
-		setListeningText();
 		
 		taskItems.setAdapter(adapter);
 		loadList();
@@ -126,41 +117,23 @@ public class DisplayTaskLists extends Activity{
 	
 	
 	public void toggleRecognizer(View view) {
-		if(isListening == false) {
-			Toast alert = Toast.makeText(this, "I am listening now.", Toast.LENGTH_SHORT);
-			alert.show();
-			startSpeechRecognition();
-		} else {
-			Toast alert = Toast.makeText(this, "I am no longer listening.", Toast.LENGTH_SHORT);
-			alert.show();
-			cancelSpeechRecognition();
-		}
-		setListeningText();
-	}
-	
-	public void setListeningText() {
+		VoiceHandler instance = VoiceHandler.getInstance();
+		Toast alert = null;		
 		Button toggleListening = (Button)this.findViewById(R.id.toggleListening);
-		if(isListening == false){
+		
+		if(instance.isListening() == false) {
+			alert = Toast.makeText(this, "I am listening now.", Toast.LENGTH_SHORT);
 			toggleListening.setText("Start Listening");
+			instance.startListening();
 		} else {
+			alert = Toast.makeText(this, "I am no longer listening.", Toast.LENGTH_SHORT);			
 			toggleListening.setText("Stop Listening");
+			instance.stopListening();
 		}
-		
+		alert.show();
 	}
 	
 	
-	public void startSpeechRecognition() {
-		taskSpeechRecognizer.startListening(taskRecognizerIntent);
-		isListening = true;
-	}
-	
-	private void cancelSpeechRecognition() {
-
-		taskSpeechRecognizer.stopListening();
-		taskSpeechRecognizer.cancel();
-		
-		isListening = false;
-	}
 	
 	/**
 	 * Grabs the lists in the db in the form of an array of objects.
@@ -192,7 +165,7 @@ public class DisplayTaskLists extends Activity{
 	}
 	
 	public void back(View view) {
-		closeList();	
+		closeList();
 	}
 	
 	public void speak(View view) {
@@ -202,14 +175,12 @@ public class DisplayTaskLists extends Activity{
 		 
         try {
         	startActivityForResult(getSpeech, VOICE_RECOGNITION);
-            
         } catch (ActivityNotFoundException a) {
             Toast t = Toast.makeText(getApplicationContext(),
                     "Opps! Your device doesn't support Speech to Text",
                     Toast.LENGTH_SHORT);
             t.show();
         }
-		
 	}
 	
 	public void onConfigurationChanged() {}
@@ -324,7 +295,6 @@ public class DisplayTaskLists extends Activity{
 		
 		loadItemList();
 		
-		setListeningText();
 	}
 	
 	public void loadItemList() {
@@ -339,75 +309,8 @@ public class DisplayTaskLists extends Activity{
 		itemAdapter.notifyDataSetChanged();	
 	}
 	
-	private RecognitionListener taskRecognitionListener = new RecognitionListener() {
-        @Override
-        public void onBufferReceived(byte[] buffer) {
-                // TODO Auto-generated method stub
-                //Log.d(TAG, "onBufferReceived");
-        }
-
-        @Override
-        public void onError(int error) {
-                // TODO Auto-generated method stub
-                Log.d(TAG, "onError: " + error);
-                taskSpeechRecognizer.startListening(taskRecognizerIntent);
-        }
-
-        @Override
-        public void onEvent(int eventType, Bundle params) {
-                // TODO Auto-generated method stub
-                Log.d(TAG, "onEvent");
-        }
-
-        @Override
-        public void onPartialResults(Bundle partialResults) {
-                // TODO Auto-generated method stub
-                Log.d(TAG, "onPartialResults");
-        }
-
-        @Override
-        public void onReadyForSpeech(Bundle params) {
-                // TODO Auto-generated method stub
-                Log.d(TAG, "onReadyForSpeech");
-                
-        }
-
-        @Override
-        public void onResults(Bundle results) {
-                Log.d(TAG, "onResults");
-                
-                ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-                
-                String voiceRequest = matches.get(0);
-
-                findCommands(voiceRequest);
-
-                taskSpeechRecognizer.startListening(taskRecognizerIntent);
-        }
-        
-        @Override
-        public void onRmsChanged(float rmsdB) {
-                // TODO Auto-generated method stub
-                //Log.d(TAG, "onRmsChanged");
-        }
-
-        @Override
-        public void onBeginningOfSpeech() {
-                // TODO Auto-generated method stub
-                Log.d(TAG, "onBeginningOfSpeech");
-        }
-
-        @Override
-        public void onEndOfSpeech() {
-                // TODO Auto-generated method stub
-                Log.d(TAG, "onEndOfSpeech");
-               
-        }
-
-	};	
-
+	
 	public void processCommand(String command, String commandOptions) {
-		
 		if(command.equals("open")){
 			if(commandOptions != null && commandOptions.length() != 0){
 				openListByName(commandOptions);

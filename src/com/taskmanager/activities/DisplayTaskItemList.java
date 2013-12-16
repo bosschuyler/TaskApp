@@ -20,11 +20,9 @@ public class DisplayTaskItemList extends Activity {
 
 	//TaskListItems array containing all the strings.
 	public static ArrayList<TaskListItem> ItemList = new ArrayList<TaskListItem>();
-	
 	public static TaskItemListAdapter adapter;
 	
 	private static int listID;
-	
 	private static int VOICE_RECOGNITION = 1000;
 	
 	protected void onCreate(Bundle savedInstanceState) {
@@ -46,10 +44,9 @@ public class DisplayTaskItemList extends Activity {
 		listName = listName.substring(0,1).toUpperCase(Locale.US) + listName.substring(1);
 		
 		TextView title = (TextView) this.findViewById(R.id.list_title);
-		title.setText(listName);		
+		title.setText(listName);	
 		
 		loadList();
-		
 		
 		Toast t = Toast.makeText(getApplicationContext(),
                 "this is the listID: "+listID,
@@ -81,7 +78,6 @@ public class DisplayTaskItemList extends Activity {
 		 
         try {
         	startActivityForResult(getSpeech, VOICE_RECOGNITION);
-            
         } catch (ActivityNotFoundException a) {
             Toast t = Toast.makeText(getApplicationContext(),
                     "Opps! Your device doesn't support Speech to Text",
@@ -116,7 +112,6 @@ public class DisplayTaskItemList extends Activity {
                 	if(parts[i] != null && parts[i].length() != 0) {
                 		TaskListItem tempItem = new TaskListItem();
                     	
-                    	
                     	tempItem.setName(parts[i]);
                         tempItem.setListID(listID);
                         tempItem.save();
@@ -130,6 +125,5 @@ public class DisplayTaskItemList extends Activity {
             }   		 
 	       
 		}	
-	}
-	
+	}	
 }
